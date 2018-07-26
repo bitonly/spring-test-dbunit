@@ -75,4 +75,17 @@ public @interface DbUnitConfiguration {
 	 */
 	Class<? extends DatabaseOperationLookup> databaseOperationLookup() default DefaultDatabaseOperationLookup.class;
 
+	/**
+	 * Returns the schema of the database which will be used to access {@link IDatabaseConnection
+	 * IDatabaseConnections}.
+	 * @return the schemas of the database
+	 */
+	String[] schemas() default {};
+
+	/**
+	 * Returns the db type, example 'mysql'
+	 * @return the db type, example 'mysql'
+	 */
+	String dbType() default "";
+
 }

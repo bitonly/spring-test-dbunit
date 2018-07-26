@@ -93,6 +93,8 @@ public class DbUnitTestExecutionListener extends AbstractTestExecutionListener {
 		}
 		String[] databaseConnectionBeanNames = null;
 		String dataSetLoaderBeanName = null;
+		String[] schemas = null;
+		String dbType = null;
 		Class<? extends DataSetLoader> dataSetLoaderClass = FlatXmlDataSetLoader.class;
 		Class<? extends DatabaseOperationLookup> databaseOperationLookupClass = DefaultDatabaseOperationLookup.class;
 
@@ -105,6 +107,8 @@ public class DbUnitTestExecutionListener extends AbstractTestExecutionListener {
 			dataSetLoaderClass = configuration.dataSetLoader();
 			dataSetLoaderBeanName = configuration.dataSetLoaderBean();
 			databaseOperationLookupClass = configuration.databaseOperationLookup();
+			schemas = configuration.schemas();
+			dbType = configuration.dbType();
 		}
 
 		if (ObjectUtils.isEmpty(databaseConnectionBeanNames)
@@ -124,7 +128,7 @@ public class DbUnitTestExecutionListener extends AbstractTestExecutionListener {
 					+ "\", datasets will be loaded using " + (StringUtils.hasLength(dataSetLoaderBeanName)
 							? "'" + dataSetLoaderBeanName + "'" : dataSetLoaderClass));
 		}
-		prepareDatabaseConnection(testContext, databaseConnectionBeanNames);
+		prepareDatabaseConnection(testContext, databaseConnectionBeanNames, schemas, dbType);
 		prepareDataSetLoader(testContext, dataSetLoaderBeanName, dataSetLoaderClass);
 		prepareDatabaseOperationLookup(testContext, databaseOperationLookupClass);
 	}
@@ -140,14 +144,19 @@ public class DbUnitTestExecutionListener extends AbstractTestExecutionListener {
 						+ Arrays.asList(COMMON_DATABASE_CONNECTION_BEAN_NAMES));
 	}
 
-	private void prepareDatabaseConnection(DbUnitTestContextAdapter testContext, String[] connectionBeanNames)
+	private void prepareDatabaseConnection(DbUnitTestContextAdapter testContext, String[] connectionBeanNames, String[] schemas, String dbType)
 			throws Exception {
 		IDatabaseConnection[] connections = new IDatabaseConnection[connectionBeanNames.length];
 		for (int i = 0; i < connectionBeanNames.length; i++) {
 			Object databaseConnection = testContext.getApplicationContext().getBean(connectionBeanNames[i]);
+			String schema = null;
+			if (schemas != null && schemas.length > i) {
+				schema = schemas[i];
+			}
+
 			if (databaseConnection instanceof DataSource) {
-				databaseConnection = DatabaseDataSourceConnectionFactoryBean
-						.newConnection((DataSource) databaseConnection);
+				DataSource dataSource = (DataSource) databaseConnection;
+				databaseConnection = DatabaseDataSourceConnectionFactoryBean.newConnection(dataSource, schema, dbType);
 			}
 			Assert.isInstanceOf(IDatabaseConnection.class, databaseConnection);
 			connections[i] = (IDatabaseConnection) databaseConnection;

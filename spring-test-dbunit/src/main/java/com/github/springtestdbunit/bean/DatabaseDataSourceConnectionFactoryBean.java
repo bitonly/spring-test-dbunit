@@ -18,8 +18,11 @@ package com.github.springtestdbunit.bean;
 
 import javax.sql.DataSource;
 
+import org.dbunit.database.DatabaseConfig;
 import org.dbunit.database.DatabaseDataSourceConnection;
 import org.dbunit.database.IDatabaseConnection;
+import org.dbunit.ext.mysql.MySqlDataTypeFactory;
+import org.dbunit.ext.mysql.MySqlMetadataHandler;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -50,9 +53,10 @@ public class DatabaseDataSourceConnectionFactoryBean implements FactoryBean<Data
 		super();
 	}
 
-	public DatabaseDataSourceConnectionFactoryBean(DataSource dataSource) {
+	public DatabaseDataSourceConnectionFactoryBean(DataSource dataSource, String schema) {
 		super();
 		this.dataSource = dataSource;
+		this.schema = schema;
 	}
 
 	public DatabaseDataSourceConnection getObject() throws Exception {
@@ -137,11 +141,18 @@ public class DatabaseDataSourceConnectionFactoryBean implements FactoryBean<Data
 	 * Convenience method that can be used to construct a transaction aware {@link IDatabaseConnection} from a
 	 * {@link DataSource}.
 	 * @param dataSource The data source
+     * @param schema The schmea of datasource
+     * @param dbType The database type
 	 * @return A {@link IDatabaseConnection}
 	 */
-	public static IDatabaseConnection newConnection(DataSource dataSource) {
+	public static IDatabaseConnection newConnection(DataSource dataSource, String schema, String dbType) {
 		try {
-			return (new DatabaseDataSourceConnectionFactoryBean(dataSource)).getObject();
+			DatabaseDataSourceConnection connection = (new DatabaseDataSourceConnectionFactoryBean(dataSource, schema)).getObject();
+			if ("mysql".equalsIgnoreCase(dbType)) {
+				connection.getConfig().setProperty(DatabaseConfig.PROPERTY_DATATYPE_FACTORY, new MySqlDataTypeFactory());
+				connection.getConfig().setProperty(DatabaseConfig.PROPERTY_METADATA_HANDLER, new MySqlMetadataHandler());
+			}
+			return connection;
 		} catch (Exception ex) {
 			throw new IllegalStateException(ex);
 		}
